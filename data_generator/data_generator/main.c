@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#
-#define MAX 100
-
 #define SIZE 64 //mbps
 
 int main(int argc, char** argv)
@@ -30,14 +27,14 @@ int main(int argc, char** argv)
             while(time)
             {
                 //sendto(sfd, "packetbody...", SIZE, ...);
-                printf("pid: %d, sending packet size: %d\n", getpid(), SIZE);
+                printf("pid: %d, sending packet: %d\n", getpid(), SIZE);
                 sleep(1);
             }
             return 0;
         }
         else
         {
-            printf("i am parent, pid=%d\n", getpid());
+            //printf("i am parent, pid=%d\n", getpid());
         }
     }
     
