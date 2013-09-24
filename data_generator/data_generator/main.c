@@ -13,22 +13,27 @@
 
 #define BUFLEN 1514
 #define MAX_PACKET 11776 //bits
-#define OVERHEAD 39 //approx overhead for sendto return/usecond for this env. MAX is 40ish
-#define SRV_IP "130.191.3.100"
-#define PORT 32351
+#define OVERHEAD 40 //approx overhead for sendto return/usecond for this env. MAX is 40ish
+#define SRV_IP "127.0.0.1"
+#define PORT 8002
 
 int main(int argc, char** argv)
 {
     
-    int r=256; //mbps form terminal arg
-    int t=5; //seconds form terminal arg
+    int r=2; //mbps form terminal arg
+    int t=20; //seconds form terminal arg
+    int packet_count=0;
     
     //socket stuff
     struct sockaddr_in si_other;
-    int s, i, slen=sizeof(si_other);
+    int slen=sizeof(si_other);
+    
+    int _socket, i;
+
     char buf[BUFLEN];
     
-    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))==-1)
+    _socket=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (_socket==-1)
     {
         printf("Error: socket");
         exit(0);
@@ -61,14 +66,17 @@ int main(int argc, char** argv)
     {
         for(int i=0; i< num_of_packets; i++)
         {
-            if (sendto(s, buf, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
+            if (sendto(_socket, buf, BUFLEN, 0, (struct sockaddr *)&si_other, slen)==-1)
                     printf("Error: sendto()\n");
+            
+            packet_count++;
             
             usleep(sleep_time);
         }
     }
     
-    close(s);
+    close(_socket);
     printf("exiting main\n");
+    printf("packet_count=%d", packet_count);
     return 0;
 }
