@@ -12,25 +12,88 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #define BUFLEN 1514
 #define MAX_PACKET 11776 //bits -- 1.4KB
-#define OVERHEAD 35 //approx overhead for sendto return/usecond for this env. MAX is 40ish
+#define OVERHEAD 40 //approx overhead for sendto return/usecond for this env. MAX is 40ish
 #define SRV_IP "127.0.0.1"
 #define PORT 32000
-#define MICRO_PER_SECOND	1000000
+#define MICRO_PER_SECOND 1000000
 #define MILLION 1000000
-//30 us is the min
+#define PROCESS_MBIT_THRESHOLD 180
+#define SLEEP_MIN 30
 
-static int *glob_var;
+void usage()
+{
+    printf("\n");
+    printf("\n -r : Mbps ");
+    printf("\n -t : Trial time ");
+    
+    printf("\n\n");
+    
+}
+
 
 int main(int argc, char** argv)
 {
+    int i;
     //he wants 350 max
     //200mbps seems to be my max on 1 process
-    int r=201; //mbps form terminal arg
-    int t=10; //seconds form terminal arg
+    int r; //mbps form terminal arg
+    int t; //seconds form terminal arg
+    //int workers=6;
     int packet_count=0;
+    int overhead=OVERHEAD;
+    
+    
+    if (argc < 3 )
+    {
+        usage();
+        exit(0);
+    }
+    else
+	{
+        for (i=1; i < argc ; i+=2)
+        {
+            if (argv[i][0] == '-')
+            {
+                switch(argv[i][1])
+                {
+                    case 'r':
+                        r = atoi(argv[i+1]);
+                        break;
+                    case 't':
+                        t = atoi(argv[i+1]);
+                        break;
+                    default: 
+                        return(0);
+                        break;
+                }
+                
+            }
+        }
+    }
+
+    //adaptive drift offset
+    if(r<180)
+    {
+       overhead=41;
+    }
+    else if (r<458)
+    {
+        overhead=20;
+    }
+    else if (r<=600)
+    {
+        overhead=10;
+    }
+    else if(r<800)
+    {
+        overhead=1;
+    }
+    
+    printf("overhead=%d\n",overhead);
     
     printf("r=%d t=%d\n", r,t);
     
@@ -59,37 +122,38 @@ int main(int argc, char** argv)
     
     
     //App. logic
-    int r_bits = r * MILLION;
+    int r_bits = r * MILLION; //required bits/second
     
-    int workers = ceil(r / (float)200);
+   
+    int num_of_packets = r_bits / MAX_PACKET ; // packets/second
+    
+    double sleep_time = (1 / (double)num_of_packets);
+    double usleep_time=sleep_time * MILLION; //sleep in us
+    usleep_time= usleep_time - overhead ;
+    printf("raw  sleep=%lf\n", sleep_time);
+    printf("raw usleep=%lf\n", usleep_time);
+    
+    int workers = ceil((float)SLEEP_MIN / usleep_time);
     printf("launching %d worker(s)\n", workers);
 
-    int num_of_packets = r_bits / MAX_PACKET ;
-    num_of_packets = num_of_packets/workers; //packets/worker
+    usleep_time=usleep_time * workers; //scale for parallel workers
     
-    double sleep_time = (1 / (double)num_of_packets) * MILLION; //sleep in us
-    sleep_time= sleep_time - OVERHEAD ;
-    
-    if(sleep_time <1)
+    if(usleep_time < SLEEP_MIN)
     {
-        printf("neg sleep time: %lf, exiting", sleep_time);
+        printf("WARNING: usleep_time < 30us -- this percission is not reliable: %lf, exiting\n", usleep_time);
         return 0;
     }
-    if(sleep_time<30)
-    {
-        printf("WARNING: sleeep time is < 30us -- this percission is not reliable\n");
-    }
     
-    printf("%d / %d = %d, sleep=%lf\n", r_bits, MAX_PACKET, num_of_packets, sleep_time);
+    printf("%d / %d = %d, sleep=%lf\n", r_bits, MAX_PACKET, num_of_packets, usleep_time);
     
     for(int i=0; i<workers; i++)
     {
         if (fork()==0)
         {
-            printf("child started: pid=%d\n", getpid());
+            printf("child started: pid=%d, w/ sleep:%lf\n", getpid(), usleep_time);
             struct timeval start_time;
             struct timeval stop_time;
-            float drift;
+            float elapsed;
             gettimeofday( &start_time, NULL );
             
             //do work
@@ -99,20 +163,21 @@ int main(int argc, char** argv)
                     printf("Error: sendto()\n");
                     
                 packet_count++;
-                usleep(sleep_time);
+                usleep(usleep_time);
                 
                 gettimeofday( &stop_time, NULL );
                 
-                drift = (float)(stop_time.tv_sec  - start_time.tv_sec);
-                drift += (stop_time.tv_usec - start_time.tv_usec)/(float)MICRO_PER_SECOND;
+                elapsed = (float)(stop_time.tv_sec  - start_time.tv_sec);
+                elapsed += (stop_time.tv_usec - start_time.tv_usec)/(float)MICRO_PER_SECOND;
                 
-                if(drift>=(double) t)
+                if(elapsed>=(double) t)
                     break;
                 
             }
             
             printf("child closed: %d - %d packets sent\n", getpid(), packet_count);
-            return 0;
+            _exit(0);
+            //return 0;
         }
         else
         {
@@ -121,8 +186,8 @@ int main(int argc, char** argv)
     }
     
     printf("waiting for children\n");
-    close(_socket);
     wait(NULL);
+    close(_socket);
     
     printf("exiting main\n");
     return 0;
