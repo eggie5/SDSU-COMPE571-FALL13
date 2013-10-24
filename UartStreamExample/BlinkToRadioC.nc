@@ -73,42 +73,42 @@ implementation {
   }
  
 
-event void Timer0.fired()
+	event void Timer0.fired()
        {
-       uint8_t    *mydata;
-       uint8_t    *sreceivedData;
-       uint8_t    i;
+	       uint8_t    *mydata;
+	       uint8_t    *sreceivedData;
+	       uint8_t    i;
      
 
 
- 	mydata = (uint8_t*)  malloc(5);
-	sreceivedData = (uint8_t*)  malloc(5);
+	 	mydata = (uint8_t*)  malloc(5);
+		sreceivedData = (uint8_t*)  malloc(5);
 
-	call UartStream.receive(sreceivedData,5);
+		call UartStream.receive(sreceivedData,5);
    
-     if (!sbusy)  
-          {
-          //call SendBytePacket.startSend(0x44);
-          *(mydata) = 0x41;
-          *(mydata+1) = 0x42;
-          *(mydata+2) = 0x43;
-          *(mydata+3) = 0x45;
-          *(mydata+4) = '\n';
+	     if (!sbusy)  
+	          {
+	          //call SendBytePacket.startSend(0x44);
+	          *(mydata) = 0x41;
+	          *(mydata+1) = 0x42;
+	          *(mydata+2) = 0x43;
+	          *(mydata+3) = 0x45;
+	          *(mydata+4) = '\n';
            
-    	  call UartStream.send(mydata, 5);
+	    	  call UartStream.send(mydata, 5);
 	    
          
-	  }
+		  }
 
  
    }
 
 
-event void AMRadioSend.sendDone(message_t* msg, error_t error) {
- // if(&pkt == msg)  {
-                    busy = FALSE;
-//                   }
-}
+	event void AMRadioSend.sendDone(message_t* msg, error_t error) {
+	 // if(&pkt == msg)  {
+	                    busy = FALSE;
+	//                   }
+	}
 
 
 
@@ -124,93 +124,88 @@ event void AMRadioSend.sendDone(message_t* msg, error_t error) {
   }
 
 
-async event uint8_t SendBytePacket.nextByte() 
-{
+	async event uint8_t SendBytePacket.nextByte() 
+	{
 
-return(0x42);
-
-
-//call SendBytePacket.completeSend();
-
-}
+	return(0x42);
 
 
-async event void SendBytePacket.sendCompleted(error_t error) {
+	//call SendBytePacket.completeSend();
+
+	}
 
 
-
-
-}
+	async event void SendBytePacket.sendCompleted(error_t error) {
 
 
 
 
-
-async event void UartStream.receivedByte(uint8_t byte) 
-{
- //Signals the receipt of a byte. 
+	}
 
 
-}
-
-async event void UartStream.receiveDone(uint8_t *buf, uint16_t len, error_t error) 
-{
-//Signal completion of receiving a stream. 
-
-       uint8_t    *mydata;
-       uint8_t    i;
 
 
-       mydata = (uint8_t*)  malloc(28);
+
+	async event void UartStream.receivedByte(uint8_t byte) 
+	{
+	 //Signals the receipt of a byte. 
 
 
-		 //raduo send()
-         BlinkToRadioMsg* btrpkt = (BlinkToRadioMsg*) (call SerialPacket.getPayload(&serialpkt, NULL));
+	}
+
+	async event void UartStream.receiveDone(uint8_t *buf, uint16_t len, error_t error) 
+	{
+		//Signal completion of receiving a stream. 
+
+	       uint8_t    *mydata;
+	       uint8_t    i;
+
+
+	       mydata = (uint8_t*)  malloc(28);
+
+
+			 //raduo send()
+	         BlinkToRadioMsg* btrpkt = (BlinkToRadioMsg*) (call SerialPacket.getPayload(&serialpkt, NULL));
 		  
-		for(i=0;i<28;i++)
-		{
-       	   btrpkt->msg[i]=buff[i];
-	  	}				  
-		call AMRadioSend.send(AM_BROADCAST_ADDR, &serialpkt, sizeof(DataMsg))
-		call UartStream.receive(mydata,28); //restarts serial
+			for(i=0;i<28;i++)
+			{
+	       	   btrpkt->msg[i]=buff[i];
+		  	}				  
+			call AMRadioSend.send(AM_BROADCAST_ADDR, &serialpkt, sizeof(DataMsg))
+			call UartStream.receive(mydata,28); //restarts serial
 
 
 
 
-}
+	}
 
-async event void UartStream.sendDone(uint8_t *buf, uint16_t len, error_t error) 
-{//Signal completion of sending a stream. 
+	async event void UartStream.sendDone(uint8_t *buf, uint16_t len, error_t error) 
+	{//Signal completion of sending a stream. 
 
+	}
 
+	 event message_t* RadioReceive.receive(message_t* msg, void* payload, uint8_t len) 
+	 {
 
-}
-
- event message_t* RadioReceive.receive(message_t* msg, void* payload, uint8_t len) {
-
-     uint8_t    *mydata;
-     uint8_t    i;
+	     uint8_t    *mydata;
+	     uint8_t    i;
      
-     BlinkToRadioMsg* btrmsg =(BlinkToRadioMsg*) payload;
+	     BlinkToRadioMsg* btrmsg =(BlinkToRadioMsg*) payload;
  
 	 
 	 
-     mydata = (uint8_t*)  malloc(28);
+	     mydata = (uint8_t*)  malloc(28);
 	 
-	for(i=0;i<28;i++)
-	{
-    	   mydata[i]=btrmsg->msg[i];
-  	}	
+		for(i=0;i<28;i++)
+		{
+	    	   mydata[i]=btrmsg->msg[i];
+	  	}	
 
-	call UartStream.send(mydata, 28);
+		call UartStream.send(mydata, 28);
    
 
-   
-
-
-}
-
-return msg;
-}
+	
+		return msg;
+	}
 
 }
