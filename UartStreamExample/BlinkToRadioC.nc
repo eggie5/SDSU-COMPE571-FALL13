@@ -169,7 +169,7 @@ implementation {
 		  
 			for(i=0;i<28;i++)
 			{
-	       	   btrpkt->msg[i] = buff[i];
+	       	   btrpkt->msg[i] = buf[i];
 		  	}				  
 			call AMRadioSend.send(AM_BROADCAST_ADDR, &serialpkt, sizeof(BlinkToRadioMsg))
 			call UartStream.receive(mydata,28); //restarts serial
