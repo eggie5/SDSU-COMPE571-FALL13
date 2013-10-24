@@ -157,12 +157,16 @@ implementation {
     {
         //Signal completion of receiving a stream.
 
+		
+		
         uint8_t    *mydata;
         uint8_t    i;
 
+		BlinkToRadioMsg* btrpkt = (BlinkToRadioMsg*) (call SerialPacket.getPayload(&serialpkt, NULL));
+		
         mydata = (uint8_t*)  malloc(28);
 
-        BlinkToRadioMsg* btrpkt = (BlinkToRadioMsg*) (call SerialPacket.getPayload(&serialpkt, NULL));
+        
 
         for(i=0; i<28; i++)
         {
