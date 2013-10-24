@@ -160,24 +160,19 @@ async event void UartStream.receiveDone(uint8_t *buf, uint16_t len, error_t erro
        uint8_t    *mydata;
        uint8_t    i;
 
-       mydata = (uint8_t*)  malloc(5);
+
+       mydata = (uint8_t*)  malloc(28);
 
 
-     if (!sbusy)  
-          {
-          //call SendBytePacket.startSend(0x44);
-          *(mydata) = *(buf);
-          *(mydata+1) = *(buf+1);
-          *(mydata+2) = *(buf+2);
-          *(mydata+3) = *(buf+3);
-          *(mydata+4) = *(buf+4);
-
-    	  call UartStream.send(mydata, 5);
-	    
-         
-	  }
-
-	call UartStream.receive(mydata,5);
+		 //raduo send()
+         BlinkToRadioMsg* btrpkt = (BlinkToRadioMsg*) (call SerialPacket.getPayload(&serialpkt, NULL));
+		  
+		for(i=0;i<28;i++)
+		{
+       	   btrpkt->msg[i]=buff[i];
+	  	}				  
+		call AMRadioSend.send(AM_BROADCAST_ADDR, &serialpkt, sizeof(DataMsg))
+		call UartStream.receive(mydata,28); //restarts serial
 
 
 
@@ -192,51 +187,29 @@ async event void UartStream.sendDone(uint8_t *buf, uint16_t len, error_t error)
 }
 
  event message_t* RadioReceive.receive(message_t* msg, void* payload, uint8_t len) {
- if (len == sizeof(BlinkToRadioMsg)) {
-     message_t  *myret = msg;			//Save a pointer to the message 
+
      uint8_t    *mydata;
      uint8_t    i;
      
      BlinkToRadioMsg* btrmsg =(BlinkToRadioMsg*) payload;
-     call Leds.set(btrmsg->counter);
-   
-     mydata = (uint8_t*)  malloc(5);
-   
-     if (!sbusy)  
-          {
-          BlinkToRadioMsg* btrpkt = (BlinkToRadioMsg*) (call SerialPacket.getPayload(&serialpkt, NULL));
-          btrpkt->nodeid = 0xEEEE;
-          btrpkt->counter = btrmsg->counter;
-          btrpkt->messagecount = counter;
-          btrpkt->thatfield = 3;
-          btrpkt->sourceaddress = call AMPacket.source(msg);
-          
-          call AMPacket.setDestination(&serialpkt,0xCCCC);
-          call AMPacket.setSource(&serialpkt,0xBB);
-          call AMPacket.setType(&serialpkt,0xCC);
+ 
+	 
+	 
+     mydata = (uint8_t*)  malloc(28);
+	 
+	for(i=0;i<28;i++)
+	{
+    	   mydata[i]=btrmsg->msg[i];
+  	}	
 
-          
-          //call SendBytePacket.startSend(0x44);
-          *mydata = 5;
-          *(mydata) = 0x01;
-          *(mydata+1) = 0x01;
-          *(mydata+2) = 0x02;
-          *(mydata+3) = 0x03;
-          *(mydata+4) = 0x04;
-           
-    	  call UartStream.send(mydata, 5);
-		   
-          //if (call AMSerialSend.send(AM_BROADCAST_ADDR, &serialpkt, sizeof(BlinkToRadioMsg)) == SUCCESS) {
-          //if (call AMSerialSend.send(AM_BROADCAST_ADDR, &myret, len) == SUCCESS) {
-          
-          
-         // call Leds.set(btrmsg->counter);
-         // sbusy = TRUE;
-         // }
-         }
+	call UartStream.send(mydata, 28);
+   
+
+   
 
 
 }
+
 return msg;
 }
 
