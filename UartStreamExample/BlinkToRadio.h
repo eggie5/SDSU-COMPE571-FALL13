@@ -12,11 +12,7 @@ enum {
 
 
 typedef nx_struct BlinkToRadioMsg {
-    nx_uint16_t  nodeid;
-    nx_uint16_t  counter;  // nx prefix eliminates to manually address endiannes
-	nx_uint16_t  messagecount;
-	nx_uint16_t  thatfield;
-	nx_uint16_t  sourceaddress;
+    nx_uint8_t msg[28];
 } BlinkToRadioMsg;
 
 
