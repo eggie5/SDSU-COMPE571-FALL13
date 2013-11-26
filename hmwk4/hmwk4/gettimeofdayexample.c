@@ -14,7 +14,8 @@
 #include <sys/time.h>		/* gettimeofday() */
 #include <unistd.h>		/* gettimeofday() */
 #include <stdio.h>		/* printf() */
-
+#include <sched.h>
+//#define FIFO
 
 /*
  * NO_OF_ITERATIONS is the number of times that the gettimeofday() call will
@@ -40,6 +41,29 @@ int main( int argc, char *argv[] )
 	 * call to gettimeofday().  These values are stored in this array and
 	 * held for later analysis.
          */
+#ifdef FIFO
+printf("using FIFO sched..\n\n\n");
+    //set priority and sched info
+     pid_t _pid = getpid();
+    struct sched_param param;
+    int policy;
+
+        param.sched_priority = 99;
+        if( sched_setscheduler( 0, SCHED_FIFO, &param ) == -1 ) {
+                fprintf(stderr,"error setting scheduler ... are you root?\n");
+                exit(1);
+        }
+
+        /*
+         * Set the priority of the process
+         */
+        param.sched_priority = 99;
+        if( sched_setparam( 0, &param ) == -1 ) {
+                fprintf(stderr,"Error setting priority!\n");
+                exit(1);
+        }
+#endif
+printf("default sched...");
 	struct timeval times[NO_OF_ITERATIONS];
 
         /*
