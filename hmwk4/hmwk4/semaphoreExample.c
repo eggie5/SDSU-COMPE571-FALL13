@@ -1,18 +1,5 @@
-/*******************************************************************************
- In this example program  we demonstrated  how semaphores can be used to protect shared resources.
- In the example program, the shared resource is the variable holding the index of the new   character
- to be printed on the screen ( shared resource can also be thought as screen ). Several processes attempt
- +to cooperatively and correctly write a character string to the screen. The program is designed to be compiled
- two ways, one without semaphore protection and one with semaphore protection. In this way, students  can examine
- how the program behaves differently with and without protection
- 
- The program is written by Eric Sotol.
- *******************************************************************************/
-
-
-
+#define FIFO
 #define PROTECT
-
 
 
 /*
@@ -81,21 +68,8 @@ void PrintAlphabet( void );
  */
 int main( int argc, char *argv[] )
 {
-    
-    //set priority and sched info
-    pid_t pid = getpid();
-    struct sched_param param;
-    int policy;
+/*
 
-    policy = SCHED_FIFO;
-    param.sched_priority = 18;
-    if( sched_setscheduler( pid, policy, &param ) == -1 )
-    {
-        fprintf(stderr,"Error setting scheduler/priority!\n");
-        exit(1); 
-    }
-    
-    /*
      * Some needed variables
      */
     int rtn;
@@ -168,7 +142,31 @@ int main( int argc, char *argv[] )
          * I am a child
          */
         //printf("Child %i started ...\n", count);
+#ifdef FIFO
+printf("using FIFO sched..\n\n\n");
+    //set priority and sched info
+     pid_t _pid = getpid();
+    struct sched_param param;
+    int policy;
+
+        param.sched_priority = 99;
+        if( sched_setscheduler( 0, SCHED_FIFO, &param ) == -1 ) {
+                fprintf(stderr,"error setting scheduler ... are you root?\n");
+                exit(1);
+        }
+
+        /*
+         * Set the priority of the process
+         */
+        param.sched_priority = 99;
+        if( sched_setparam( 0, &param ) == -1 ) {
+                fprintf(stderr,"Error setting priority!\n");
+                exit(1);
+        }
+#endif
+printf("default sched...");
 		PrintAlphabet();
+
         
     } else {
         sleep(4);
